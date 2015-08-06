@@ -18,40 +18,67 @@ if [ `whoami` != 'root' ]
 fi
 
 # The location for archive downloads
-DOWN="/opt/DOWN"
+DOWN="/home/pi/DOWN"
 # The location of the openHAB installation
-HAB="/opt/openHAB"
+HAB="/opt/openhab"
 # The location of SmartHome Designer
 SMD="/opt/ohdesign"
 
+echo "Checking folders"
+[[ ! -d $DOWN ]]                 && mkdir -p $DOWN                 && echo "create $DOWN"
+[[ ! -d $HAB/addons ]]           && mkdir -p $HAB/addons           && echo "create $HAB/addons"
+[[ ! -d $HAB/addons-available ]] && mkdir -p $HAB/addons-available && echo "create $HAB/addons-available"
+#[[ ! -d $SMD ]]                  && mkdir -p $SMD                  && echo "create $SMD"
+
+
+echo "Going to $DOWN"
 cd $DOWN
 
+echo "Downloading runtim and addons"
 wget -N https://openhab.ci.cloudbees.com/job/openHAB2/lastSuccessfulBuild/artifact/distribution/target/distribution-2.0.0-SNAPSHOT-runtime.zip
 wget -N https://openhab.ci.cloudbees.com/job/openHAB2/lastSuccessfulBuild/artifact/distribution/target/distribution-2.0.0-SNAPSHOT-addons.zip
 
 # Uncomment the following line if Habmin2 is desired
+echo "Downloading habmin"
 wget -N --content-disposition --no-check-certificate https://raw.githubusercontent.com/cdjackson/HABmin2/master/output/org.openhab.ui.habmin_2.0.0.SNAPSHOT-0.0.15.jar
 
 # Uncomment the following line if SmartHome Designer is desired
-wget -N http://download.eclipse.org/smarthome/nightly-snapshots/eclipsesmarthome-incubation-0.8.0-SNAPSHOT-designer-linux64.zip
+echo "Downloading SmartHome Designer"
+#wget -N http://download.eclipse.org/smarthome/nightly-snapshots/eclipsesmarthome-incubation-0.8.0-SNAPSHOT-designer-linux64.zip
 
+echo "Going to $HAB"
 cd $HAB
+echo "Deleting all old addons and runtime"
 rm -rf $HAB/addons/* $HAB/runtime/server
 
+echo "Unzip runtime"
 unzip -o $DOWN/distribution-2.0.0-SNAPSHOT-runtime.zip
 
-# clear up some windows clutter not needed with *nix systems
+echo "clear up some windows clutter not needed with *nix systems"
 rm $HAB/*.bat
 
-cd $HAB
+#cd $HAB
 #add any OpenHAB 2 bindings to the list in the following line.  Make sure any wildcards select only the binding you want
-unzip -o $DOWN/distribution-2.0.0-SNAPSHOT-addons.zip *xmpp*.jar *http*.jar *network*.jar *insteon*.jar *rrd*.jar *logging*.jar *action.mail*.jar *binding.weather*.jar *zwave*.jar *yahoo*.jar
+#unzip -o $DOWN/distribution-2.0.0-SNAPSHOT-addons.zip *xmpp*.jar *http*.jar *network*.jar *insteon*.jar *rrd*.jar *logging*.jar *action.mail*.jar *binding.weather*.jar *zwave*.jar *yahoo*.jar
+
+echo "Going to $HAB/addons-available"
+cd $HAB/addons-available
+#add any OpenHAB 2 bindings to the list in the following line.  Make sure any wildcards select only the binding you want
+unzip -o $DOWN/distribution-2.0.0-SNAPSHOT-addons.zip
+
+echo "Going to $HAB/addons"
+cd $HAB/addons
+for addon in *xmpp*.jar *rrd*.jar *logging*.jar *action.mail*.jar *binding.weather*.jar *zwave*.jar *yahooweather*.jar *astro*.jar  *knx*.jar *astro*.jar
+do
+  find $HAB/addons-available/addons/$addon -type f -exec bash -c \
+    '[[ ! -f $(basename $1) ]] && ln -s $1 && echo "Creating symlink for $1"' foo {} \;
+done
 
 # uncomment the following line if the habmin2 jar is to be copied in
 cp $DOWN/org.openhab.ui.habmin_2.0.0.SNAPSHOT-0.0.15.jar $HAB/addons
 
 # uncomment the following 4 lines if Eclipse Designer is also to be updated.  Be sure to save your work before updating.
 
-cd $SMD
-rm -rf $SMD/p2/* $SMD/plugins 
-unzip -o $DOWN/eclipsesmarthome-incubation-0.8.0-SNAPSHOT-designer-linux64.zip
+#cd $SMD
+#rm -rf $SMD/p2/* $SMD/plugins 
+#unzip -o $DOWN/eclipsesmarthome-incubation-0.8.0-SNAPSHOT-designer-linux64.zip
